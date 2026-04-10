@@ -16,7 +16,7 @@ public partial class SAV_Trainer7 : Form
         WinFormsUtil.TranslateInterface(this, Main.CurrentLanguage);
 
         BattleStyles = WinFormsTranslator.GetEnumTranslation<PlayerBattleStyle7>(Main.CurrentLanguage);
-        if (SAV is not SAV7USUM)
+        if (sav is not SAV7USUM)
             BattleStyles = BattleStyles[..^1]; // remove Nihilist
 
         SAV = (SAV7)(Origin = sav).Clone();
@@ -552,7 +552,7 @@ public partial class SAV_Trainer7 : Form
             default:
                 return;
         }
-        System.Media.SystemSounds.Asterisk.Play();
+        WinFormsUtil.Asterisk();
     }
 
     private string? UpdateTip(int index)
