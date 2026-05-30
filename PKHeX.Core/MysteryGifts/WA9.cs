@@ -533,7 +533,7 @@ public sealed class WA9(Memory<byte> raw) : DataMysteryGift(raw), ILangNick, INa
             var av = GetAbilityIndex(criteria, AbilityType);
             pk.RefreshAbility(av);
             SetPID(pk);
-            SetIVs(pk);
+            SetIVs(pk, criteria);
         }
         else
         {
@@ -598,31 +598,12 @@ public sealed class WA9(Memory<byte> raw) : DataMysteryGift(raw), ILangNick, INa
         pk.PID = GetPID(pk, PIDType);
     }
 
-    private void SetIVs(PA9 pk)
+    private void SetIVs(PA9 pk, in EncounterCriteria criteria)
     {
         Span<int> finalIVs = stackalloc int[6];
         GetIVs(finalIVs);
-        var ivflag = finalIVs.IndexOfAny(0xFC, 0xFD, 0xFE);
         var rng = Util.Rand;
-        if (ivflag == -1) // Random IVs
-        {
-            for (int i = 0; i < finalIVs.Length; i++)
-            {
-                if (finalIVs[i] > 31)
-                    finalIVs[i] = rng.Next(32);
-            }
-        }
-        else // 1/2/3 perfect IVs
-        {
-            int IVCount = finalIVs[ivflag] - 0xFB;
-            do { finalIVs[rng.Next(6)] = 31; }
-            while (finalIVs.Count(31) < IVCount);
-            for (int i = 0; i < finalIVs.Length; i++)
-            {
-                if (finalIVs[i] != 31)
-                    finalIVs[i] = IsHOMEGift ? HomeBaseIV : rng.Next(32); // HOME ZA-starters gifts have 20 in non-perfect IVs
-            }
-        }
+        ApplyTemplateIVs(finalIVs, criteria, rng, _ => IsHOMEGift ? HomeBaseIV : rng.Next(32)); // HOME ZA-starters gifts have 20 in non-perfect IVs
         pk.SetIVs(finalIVs);
     }
 
@@ -703,15 +684,33 @@ public sealed class WA9(Memory<byte> raw) : DataMysteryGift(raw), ILangNick, INa
         if (pk is IAlphaReadOnly a && a.IsAlpha != IsAlpha)
             return true;
 
-        if (IsHOMEGift && FlawlessIVCount > 0)
+        if (IsHOMEGift)
         {
-            if (pk.FlawlessIVCount != FlawlessIVCount)
-                return false; // HOME ZA-starters have non-perfect IVs to 20, so IVs at 31 can't exceed the flawless count.
-
-            for (var i = 0; i < 6; i++)
+            if (FlawlessIVCount > 0)
             {
-                var iv = pk.GetIV(i);
-                if (iv != 31 && iv != HomeBaseIV)
+                if (pk.FlawlessIVCount != FlawlessIVCount)
+                    return false; // HOME ZA-starters have non-perfect IVs to 20, so IVs at 31 can't exceed the flawless count.
+
+                for (var i = 0; i < 6; i++)
+                {
+                    var iv = pk.GetIV(i);
+                    if (iv != 31 && iv != HomeBaseIV)
+                        return false;
+                }
+            }
+            else // All Specified
+            {
+                if (pk.IV_HP != IV_HP)
+                    return false;
+                if (pk.IV_ATK != IV_ATK)
+                    return false;
+                if (pk.IV_DEF != IV_DEF)
+                    return false;
+                if (pk.IV_SPA != IV_SPA)
+                    return false;
+                if (pk.IV_SPD != IV_SPD)
+                    return false;
+                if (pk.IV_SPE != IV_SPE)
                     return false;
             }
         }
